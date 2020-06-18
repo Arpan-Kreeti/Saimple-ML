@@ -83,7 +83,7 @@ defmodule GradientDescent do
       IO.puts("Grad0 = #{grad0}, Grad1 = #{grad1}")
       IO.puts("")
 
-      if(cost < @epsilon && cost < @epsilon) do
+      if(cost < @epsilon) do
         {theta0, theta1}
       else
         tmp0 = theta0 - @alpha * grad0
