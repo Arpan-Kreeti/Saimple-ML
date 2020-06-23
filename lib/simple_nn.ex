@@ -1,9 +1,9 @@
 defmodule NeuralNet do
-  #@theta1 [[-30, 20, 20], [10, -20, -20]]
-  #@theta2 [[-10, 20, 20]]
+  @theta1 [[-30, 20, 20], [10, -20, -20]]
+  @theta2 [[-10, 20, 20]]
 
-  @theta1 [[1.1800000000000005e-4, 9.659999999999998e-4, -4.4799999999999994e-4], [-1.4400000000000003e-4, -1.8600000000000008e-4, 5.18e-4]]
-  @theta2 [[-0.006750396491856032, -0.006582396491856032, -0.005994396491856034]]
+ # @theta1 [[-0.09672425379170034, -0.019924253791700545, -0.03456425379170066], [0.04895574620829934,- 0.07295574620829964, -0.07992425379170034]]
+  #@theta2 [[-0.0367881631205424, 0.0702518368794575, 0.13385183687945762]]
 
   def xnor_forward_prop(x1, x2) do
     # Input, 1 is the bias
@@ -53,7 +53,7 @@ defmodule NeuralNet do
 end
 
 defmodule Backprop do
-  @init_epsilon 1.0e-3
+  @init_epsilon 0.12
   alias NeuralNet, as: Nn
 
   def start(m, training_set, theta1, theta2) do
@@ -186,6 +186,9 @@ defmodule NGradientDescent do
   def start do
     m = 1000
     training_set = Backprop.example_gen(&Backprop.xnor/2)
+
+    # @theta1 [[-30, 20, 20], [10, -20, -20]]
+    # @theta2 [[-10, 20, 20]]
 
     theta1 = [Backprop.theta_init(3), Backprop.theta_init(3)]
 
