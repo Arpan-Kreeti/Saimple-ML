@@ -2,55 +2,39 @@ require 'pry'
 # Range of initial theta value (-INIT_EPSILON, +INIT_EPSILON)
 INIT_EPSILON = 0.12
 # Learning Rate
-ALPHA = 0.001
+ALPHA = 0.01
 # Criteria for stopping Gradient descent, target value for cost function
 EPSILON = 0.1
 # Max iterations for gradient descent
 MAX_ITER = 5000
 
-def start 
-
-  theta = [[theta_init(3), theta_init(3)], [theta_init(3)]]
-
-  examples = example_gen(:xnor)
+def start(theta, examples)
 
   activations = []
   
-  theta1_grad = [0, 0, 0]
+  theta1_grad = [[0, 0, 0], [0, 0, 0]]
 
   theta2_grad = [0, 0, 0]
 
   examples.each do |inp_1, inp_2, output|
     result = forward_prop(inp_1, inp_2, output, theta) 
-    theta1_grad = theta1_grad.zip(result[:theta1_grad]).map { |val1, val2| val1 + val2}
+
+    theta1_grad = theta1_grad.zip(result[:theta1_grad]).map { |val1, val2| 
+      val1.zip(val2).map {|v1, v2| v1 + v2}
+    }
+
     theta2_grad = theta2_grad.zip(result[:theta2_grad]).map { |val1, val2| val1 + val2}
     activations << result
   end
 
   m = activations.length
 
-  theta1_grad = theta1_grad.map { |val| (1.0/m) * val}
+  theta1_grad = theta1_grad.map { |val|  val.map{ |v| (1.0/m) * v }  }
+
   theta2_grad = theta2_grad.map { |val| (1.0/m) * val}
 
-  cost = calc_cost(activations)
+  [theta1_grad, theta2_grad]
 end
-
-# Cost function: -1/m * ∑(1 to m) [y*log(h) + (1-y)log(1-h)]
-def calc_cost(activations)
-  # Number of inputs
-  m = activations.length 
-
-  sum = activations.inject(0) do |cost, activation| 
-
-    prediction = activation[:prediction]
-    expected_output = activation[:output]
-
-    cost + (expected_output * Math.log(prediction)) + ((1 - expected_output) * Math.log(1 - prediction))
-  end
-
-  (-1.0 / m) * sum
-end
-
 
 def example_gen(func, number_of_examples = 1000)
   (1..number_of_examples).map do 
@@ -82,7 +66,7 @@ def forward_prop(input1, input2, expected_output, theta)
   # Add bias to 2nd layer(hidden layer) activation units
   a2 = [1, a21, a22]
 
-  # Destructure activations for 3nd layer (Ouput prediction)
+  # Destructure activations for 3rd layer (Ouput prediction)
   # Since we have only one output in last layer, we use splat operator like z31_a31, *
   z31_a31, * = calc_activation(a2, theta[1])
 
@@ -99,21 +83,34 @@ def forward_prop(input1, input2, expected_output, theta)
 
     # Error in 2nd layer/hidden layer: (theta2 * delta3) * sigmoidGrad(z2)
 
-    tmp = theta[1][0].map {|theta_val| theta_val * delta3}
+    tmp = theta[0][0].map {|theta_val| theta_val * delta3}
 
     z2 = [1, z21, z22] # Add bias so we can multiply (since theta2 has 3 vals)
 
-    delta2 = tmp.zip(z2).map { |tmp_val, z2_val| tmp_val * sigmoid_grad(z2_val) }
+    delta21 = tmp.zip(z2).map { |tmp_val, z2_val| tmp_val * sigmoid_grad(z2_val) }
 
-    #delta2 = delta2.drop(1) # Drop the first value, since we don't need to take into account error in bias
+    
+    tmp = theta[0][1].map {|theta_val| theta_val * delta3}
+
+    z2 = [1, z21, z22] # Add bias so we can multiply (since theta2 has 3 vals)
+
+    delta22 = tmp.zip(z2).map { |tmp_val, z2_val| tmp_val * sigmoid_grad(z2_val) }
+
+    delta2 = [delta21, delta22]
 
     # -----------------------------------------
+    # Accumulating Errors
+    # Δ = Δ + a * delta
 
-    # grad = delta * a
-
+    # For 2nd -> 3rd layer
     theta2_grad = a2.map { |val| val * delta3 }
 
-    theta1_grad = a1.zip(delta2).map { |val1, val2| val1 * val2 }
+    # For 1st -> 2nd layer
+    tmp1 = a1.zip(delta2[0]).map { |val1, val2| val1 * val2 }
+
+    tmp2 = a1.zip(delta2[1]).map { |val1, val2| val1 * val2 }
+
+    theta1_grad = [tmp1, tmp2]
 
   {inputs: a1, hidden_layer: a2, prediction: a31, output: expected_output, theta1_grad: theta1_grad, theta2_grad: theta2_grad}
 end
@@ -157,33 +154,75 @@ end
 
 # TODO IMPLEMENT GRADIENT DESCENT
 
-# def gradient_descent(cost_func, training_set, m, theta1, theta2, iter)
-#   if(iter < MAX_ITER) 
-    
-#     {cost, grad1, grad2} = cost_func.(m, training_set, theta1, theta2)
+def gradient_descent()
 
-#     if(rem(iter, 100) == 0) do
-#       IO.puts("-- ITERATION: #{iter} --")
-#       IO.puts("Value of cost function = #{cost}")
-#       IO.puts("Grad1 = #{grad1}, Grad2 = #{grad2}")
-#       IO.puts("Theta1: #{inspect(theta1)}")
-#       IO.puts("")
-#       IO.puts("Theta2: #{inspect(theta2)}")
-#       IO.puts("")
-#     end
+  theta = [ 
+            [theta_init(3), theta_init(3)], 
+            [theta_init(3)]
+          ]
 
-#     if(cost < @epsilon) do
-#       {theta1, theta2}
-#     else
-#       tmp0 = Enum.map(theta1, fn x -> Enum.map(x, fn y -> y - @alpha * grad1 end) end)
-#       tmp1 = Enum.map(theta2, fn x -> Enum.map(x, fn y -> y - @alpha * grad2 end) end)
+  examples = example_gen(:xnor)
 
-#       descent(cost_func, training_set, m, tmp0, tmp1, iter + 1)
-#     end
-#   else
-#     {theta1, theta2}
+  500.times {
+
+    theta1_grad, theta2_grad = start(theta, examples)
+
+    theta_01 = theta[0][0].zip(theta1_grad[0]).map { |val1, val2|
+      val1 - ALPHA * val2
+    }
+
+    theta_02 = theta[0][1].zip(theta1_grad[1]).map { |val1, val2|
+      val1 - ALPHA * val2
+    }
+
+    theta1 = [theta_01, theta_02]
+
+    theta2 = theta[1][0].zip(theta2_grad).map { |val1, val2| 
+      val1 - ALPHA * val2
+    }
+
+    theta = [theta1, [theta2]]
+  }
+
+  p theta
+end
+
+def xnor_forward_prop(input1, input2, theta_1, theta_2)
+
+  a1 = [1, input1, input2]
+
+  z21_a21, z22_a22 = calc_activation(a1, theta_1)
+
+  z21, a21 = z21_a21
+
+  z22, a22 = z22_a22
+
+  # Add bias to 2nd layer(hidden layer) activation units
+  a2 = [1, a21, a22]
+
+  # Destructure activations for 3rd layer (Ouput prediction)
+  # Since we have only one output in last layer, we use splat operator like z31_a31, *
+  z31_a31, * = calc_activation(a2, theta_2)
+
+  z31, a31 = z31_a31
+
+  return a31
+end
+
+# # Cost function: -1/m * ∑(1 to m) [y*log(h) + (1-y)log(1-h)]
+# def calc_cost(input)
+#   # Number of inputs
+#   m = input.length 
+
+#   sum = input.inject(0) do |x1, x2, y, theta1, theta2| 
+
+#     h =  xnor_forward_prop(x1, x2, theta_1, theta_2)
+
+#     cost + (y * Math.log(h)) + ((1 - y) * Math.log(1 - h))
 #   end
+
+#   (-1.0 / m) * sum
 # end
 
 
-start()
+gradient_descent()
