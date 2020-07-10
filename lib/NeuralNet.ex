@@ -103,16 +103,16 @@ defmodule NeuralNet do
 
         # should be 1 * 3
         # 1 * 1000
-        [[dw]] =
-          transpose(a2)
+        [[dw1], [dw2], [dw3]] =
+          transpose(a1)
           |> mult(d_predicted_output)
           |> scale(@alpha)
 
         [[w1, w2, w3]] = theta2
 
-        theta2 = [w1 + dw, w2 + dw, w3 + dw]
+        theta2 = [w1 + dw1, w2 + dw2, w3 + dw3]
 
-        # =====
+        # # =====
 
         [_, [dw11, dw12, dw13], [dw21, dw22, dw23]] =
           transpose(a1)
@@ -130,93 +130,10 @@ defmodule NeuralNet do
       end)
 
     IO.puts("Trained weights = #{inspect(theta)}")
-
+    
     # Test model
-    # test(theta)
+    test(theta)
   end
-
-  # def calc_iter(examples, weights) do
-  #   examples
-  #   |> Enum.reduce(weights, fn {inp1, inp2, output}, [theta11, theta12, theta21] ->
-  #     # Hidden Layer
-
-  #     # First Activation
-
-  #     [w1, w2, w3] = theta11
-
-  #     z11 = w1 * 1 + w2 * inp1 + w3 * inp2
-
-  #     a11 = sigmoid(z11)
-
-  #     # Second Activation
-
-  #     [w1, w2, w3] = theta12
-
-  #     z12 = w1 * 1 + w2 * inp1 + w3 * inp2
-
-  #     a12 = sigmoid(z12)
-
-  #     # Output Layer
-
-  #     [w1, w2, w3] = theta21
-
-  #     z21 = w1 * 1 + w2 * a11 + w3 * a12
-
-  #     h = sigmoid(z21)
-
-  #     # Backpropagation
-  #     error = output - h
-  #     d_predicted_output = error * sigmoid_grad(h)
-
-  #     error_hidden_layer = [
-  #       d_predicted_output * w1,
-  #       d_predicted_output * w2,
-  #       d_predicted_output * w3
-  #     ]
-
-  #     [e1, e2, e3] = error_hidden_layer
-
-  #     d_hidden_layer = [e1 * sigmoid_grad(1), e2 * sigmoid_grad(a11), e3 * sigmoid_grad(a12)]
-
-  #     # Updating Weights and Biases
-
-  #     w1 = w1 + 1 * d_predicted_output * @alpha
-  #     w2 = w2 + a11 * d_predicted_output * @alpha
-  #     w3 = w3 + a12 * d_predicted_output * @alpha
-
-  #     output_weights = [w1, w2, w3]
-
-  #     # output_bias += np.sum(d_predicted_output,axis=0,keepdims=True) * lr
-
-  #     [w1, w2, w3] = theta11
-
-  #     [dh1, dh2, dh3] = d_hidden_layer
-
-  #     w1 = w1 + 1 * dh1 * @alpha
-
-  #     w2 = w2 + inp1 * dh2 * @alpha
-
-  #     w3 = w3 + inp2 * dh3 * @alpha
-
-  #     hidden_weight_1 = [w1, w2, w3]
-
-  #     [w1, w2, w3] = theta12
-
-  #     [dh1, dh2, dh3] = d_hidden_layer
-
-  #     w1 = w1 + 1 * dh1 * @alpha
-
-  #     w2 = w2 + inp1 * dh2 * @alpha
-
-  #     w3 = w3 + inp2 * dh3 * @alpha
-
-  #     hidden_weight_2 = [w1, w2, w3]
-
-  #     # hidden_bias += np.sum(d_hidden_layer,axis=0,keepdims=True) * lr
-
-  #     [hidden_weight_1, hidden_weight_2, output_weights]
-  #   end)
-  # end
 
   def sigmoid(x) do
     1 / (1 + :math.exp(-x))
@@ -240,28 +157,33 @@ defmodule NeuralNet do
   end
 
   def test(weights) do
-    [{0, 0}, {0, 1}, {1, 0}, {1, 1}]
-    |> Enum.each(fn {inp1, inp2} ->
-      [theta11, theta12, theta21] = weights
+    training_set = [[1, 0, 0], [1, 0, 1], [1, 1, 0], [1, 1, 1]]
 
-      [w1, w2, w3] = theta11
+    [theta11, theta12, theta2] = weights
 
-      a11 = sigmoid(w1 * 1 + w2 * inp1 + w3 * inp2)
+    theta2 = [theta2]
 
-      # --------------------
+    theta1 = [theta11, theta12]
 
-      [w1, w2, w3] = theta12
+    z1 = mult(training_set, Matrix.transpose(theta1))
 
-      a12 = sigmoid(w1 * 1 + w2 * inp1 + w3 * inp2)
+    a1 =
+      Enum.map(z1, fn [val1, val2] ->
+        [1, sigmoid(val1), sigmoid(val2)]
+      end)
 
-      # --------------------
+    z2 = mult(a1, transpose(theta2))
 
-      [w1, w2, w3] = theta21
+    a2 =
+      Enum.map(z2, fn [val] ->
+        [sigmoid(val)]
+      end)
 
-      prediction = sigmoid(w1 * 1 + w2 * a11 + w3 * a12)
-
-      output = if prediction < 0.5, do: 0, else: 1
-
+    training_set
+    |> Enum.with_index()
+    |> Enum.each(fn {[_, inp1, inp2], index} ->
+      [prediction] = Enum.at(a2, index)
+      prediction = if prediction < 0.5, do: 0, else: 1
       IO.puts("For input #{inp1}, #{inp2} , PREDICTION = #{prediction}")
     end)
   end
