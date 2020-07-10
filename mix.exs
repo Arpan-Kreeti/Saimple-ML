@@ -21,7 +21,8 @@ defmodule SimpleMl.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:csv, "~> 2.3"}
+      {:csv, "~> 2.3"},
+      {:matrix, "~> 0.3.2"}
       #{:matrex, "~> 0.6.8"}
     ]
   end
