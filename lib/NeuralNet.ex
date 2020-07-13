@@ -31,7 +31,13 @@ defmodule NeuralNet do
 
     bias = [hidden_bias_1, hidden_bias_2, output_bias]
 
-    weights = [theta_init(2), theta_init(2), theta_init(2), bias]
+    # hard coding weights, random initialization sometimes leads to incorrect prediction (maybe due to local mimima problem)
+    weights = [
+      [0.031641796892049934, 0.8325924403883029],
+      [0.41337976300567036, 0.6398948044272204],
+      [0.2721034180199562, 0.08723835169292227],
+      [0.7650338835924677, 0.648352899885251, 0.3115505026289407]
+    ]
 
     # Prepare training set
     training_set =
